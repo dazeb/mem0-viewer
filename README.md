@@ -195,6 +195,28 @@ part most worth having tests for.
 The font is bundled via `@fontsource` (see `src/assets/NOTICE.md`), so nothing is
 fetched from a third-party CDN and the app works offline.
 
+## Continuous integration
+
+GitHub is the canonical home of this repo, but the checks run on **GitLab**,
+because GitHub Actions is unavailable on the account that owns it. The mirror is
+a self-hosted GitLab instance and the pipeline is one `check` job: typecheck,
+unit tests, then the production build, uploaded as an artifact so a green
+pipeline describes a bundle that can be downloaded and inspected.
+
+There is deliberately no deploy job. This is a static bundle with no backend, and
+publishing it is the host's decision — the pipeline verifies and stops.
+
+Both remotes carry the same commits, so push to both:
+
+```bash
+git push origin main    # GitHub — canonical, public
+git push gitlab main    # GitLab — runs the checks
+```
+
+If you only push to GitHub, nothing breaks; the CI mirror simply will not have
+that commit yet. When the two drift, the GitLab one is only a CI host and GitHub
+is the source of truth.
+
 ## Licence
 
 MIT — see [LICENSE](LICENSE). Not affiliated with the mem0 project.

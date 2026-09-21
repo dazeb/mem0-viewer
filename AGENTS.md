@@ -55,6 +55,32 @@ updated with `history.replaceState` — replacing, not pushing, so typing in the
 search box does not fill the back button. `mockEnabled()` accepts both the
 `VITE_MOCK` env var and `?mock=1`, and writes the param back into the URL.
 
+## Continuous integration
+
+Two remotes, and they do different jobs:
+
+| Remote | What it is |
+|---|---|
+| `origin` → `github.com/dazeb/mem0-viewer` | **Canonical and public.** The README is written for this one. |
+| `gitlab` → `ssh://git@192.168.8.111:2222/dazeb/mem0-viewer.git` | **CI host only.** GitHub Actions is disabled on the account, so the homelab GitLab runs the checks. Private mirror. |
+
+`.github/workflows/ci.yml` cannot run — it is kept because it becomes the right
+config if Actions is ever re-enabled, but do not describe it as working. The
+pipeline that actually executes is `.gitlab-ci.yml`, verified by pushing and
+watching it pass rather than by reading the YAML.
+
+The GitLab runner is registered **for this project** (runner id 5), sharing the
+`dorkhound-runner` agent container on the GitLab host. Its config is
+`/mnt/pool0/redteam-lab/gitlab-runner/config/config.toml` on that host, alongside
+the three dorkhound runners. If you re-register it, the recipe is in
+`../dorkhound/deploy/deb/README.md` — and after editing that file, confirm all
+four runners still report online, because a malformed config takes down every
+runner in the container, not just the one being added.
+
+Push to both remotes. Pushing only to GitHub is safe (the mirror just lags);
+pushing only to GitLab means the public repo is stale, which is the failure that
+matters.
+
 ## Commands
 
 ```bash
