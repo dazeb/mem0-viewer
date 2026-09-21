@@ -1,0 +1,467 @@
+/* mem0 viewer — black + lime, monochrome, Geist Mono with tight tracking.
+   The font is bundled (@fontsource), so the app makes no third-party requests
+   and works offline. */
+
+:root {
+  color-scheme: dark;
+  --bg: #07080a;
+  --panel: #0d0f11;
+  --line: #1e2225;
+  --fg: #e7eae8;
+  --dim: #767d82;
+  /* Light enough to clear 4.5:1 on the panel background — this is used for
+     small text (rail labels, counts), not decoration. */
+  --dim-2: #8b949e;
+  --lime: #c6f135;
+  --red: #ff6b6b;
+  --mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+input {
+  font: inherit;
+  letter-spacing: inherit;
+  touch-action: manipulation;
+}
+
+code {
+  color: var(--lime);
+}
+
+.muted {
+  color: var(--dim);
+}
+.nowrap {
+  white-space: nowrap;
+}
+.pad {
+  padding: 10px 12px;
+  margin: 0;
+}
+
+/* Keyboard focus is always visible; pointer clicks keep their own feedback. */
+:focus-visible {
+  outline: 2px solid var(--lime);
+  outline-offset: 2px;
+}
+
+/* Full-bleed rows sit flush against a scroll container on both sides, so an
+   outward ring would be clipped away entirely. Draw it inside the box instead. */
+.tenant:focus-visible,
+.mem:focus-visible,
+.more:focus-visible,
+.list:focus-visible {
+  outline-offset: -2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.skip {
+  position: absolute;
+  left: 8px;
+  top: -40px;
+  z-index: 10;
+  background: var(--lime);
+  color: var(--bg);
+  padding: 6px 10px;
+  border-radius: 3px;
+  text-decoration: none;
+  transition: top 120ms ease;
+}
+.skip:focus {
+  top: 8px;
+}
+
+/* ── shell ─────────────────────────────────────────────────────────────── */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  height: 100dvh;
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  padding-left: calc(16px + env(safe-area-inset-left));
+  padding-right: calc(16px + env(safe-area-inset-right));
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.brand h1 {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  text-wrap: balance;
+}
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--lime);
+  align-self: center;
+}
+.sub {
+  color: var(--dim);
+  font-size: 11px;
+}
+
+.collections {
+  display: flex;
+  gap: 6px;
+}
+.meta {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.chip,
+.toggle {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--dim);
+  padding: 4px 9px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition:
+    color 120ms ease,
+    border-color 120ms ease,
+    background-color 120ms ease;
+}
+.chip:hover:not(:disabled),
+.toggle:hover:not(:disabled) {
+  color: var(--fg);
+  border-color: var(--dim-2);
+}
+.chip:disabled,
+.toggle:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.chip.on {
+  color: var(--bg);
+  background: var(--lime);
+  border-color: var(--lime);
+  font-weight: 500;
+}
+
+.toggle {
+  padding: 1px 7px;
+  font-size: 10px;
+}
+
+.badge.mock {
+  border-color: var(--lime);
+  color: var(--lime);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* ── layout ────────────────────────────────────────────────────────────── */
+
+.body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.rail {
+  width: 312px;
+  flex: none;
+  border-right: 1px solid var(--line);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: 20px;
+}
+
+.rail-head {
+  padding: 12px;
+  margin: 0;
+  font-size: 10px;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--dim-2);
+  display: flex;
+  justify-content: space-between;
+  text-wrap: balance;
+}
+
+.tenant {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 0;
+  border-left: 2px solid transparent;
+  color: var(--dim);
+  padding: 6px 12px;
+  cursor: pointer;
+  text-align: left;
+  transition:
+    color 120ms ease,
+    background-color 120ms ease;
+}
+.tenant:hover {
+  background: var(--panel);
+  color: var(--fg);
+}
+.tenant.on {
+  color: var(--fg);
+  border-left-color: var(--lime);
+  background: var(--panel);
+}
+.tenant.on .count {
+  color: var(--lime);
+}
+.tname {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.count {
+  font-size: 11px;
+  color: var(--dim-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 12px 16px calc(60px + env(safe-area-inset-bottom));
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.search {
+  flex: 1;
+  min-width: 0;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  color: var(--fg);
+  padding: 7px 10px;
+}
+.search:focus {
+  border-color: var(--lime);
+}
+
+/* ── memories ──────────────────────────────────────────────────────────── */
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  scroll-margin-top: 12px;
+}
+
+.mem {
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--panel);
+  padding: 9px 11px;
+  cursor: pointer;
+  transition: border-color 120ms ease;
+  /* Rows past the fold skip layout and paint until they are scrolled to, so
+     "show more" on a large store stays cheap. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 96px;
+}
+.mem:hover {
+  border-color: var(--dim-2);
+}
+
+.mem-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  margin-bottom: 5px;
+}
+.ten {
+  color: var(--lime);
+}
+.badge {
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  color: var(--dim);
+  padding: 1px 5px;
+  font-size: 10px;
+}
+.spacer {
+  flex: 1;
+}
+
+.mem-text {
+  margin: 0;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+mark {
+  background: var(--lime);
+  color: var(--bg);
+  border-radius: 2px;
+}
+
+.raw-wrap {
+  margin-top: 9px;
+  cursor: default;
+}
+.raw-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  margin-bottom: 4px;
+}
+
+.raw {
+  margin: 0;
+  padding: 9px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  color: var(--dim);
+  font-size: 11px;
+  line-height: 1.45;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.notice {
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--panel);
+  padding: 14px;
+  color: var(--dim);
+  margin-bottom: 12px;
+}
+.notice p {
+  margin: 6px 0 0;
+}
+.notice.err {
+  border-color: var(--red);
+}
+.notice.err strong {
+  color: var(--red);
+}
+
+.more {
+  margin-top: 12px;
+  width: 100%;
+  background: var(--panel);
+  border: 1px dashed var(--line);
+  color: var(--dim);
+  padding: 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  transition:
+    color 120ms ease,
+    border-color 120ms ease;
+}
+.more:hover {
+  color: var(--lime);
+  border-color: var(--lime);
+}
+
+/* ── narrow screens ────────────────────────────────────────────────────── */
+/* The rail becomes a short scrolling strip above the memories rather than a
+   fixed column that would take most of a phone screen. */
+
+@media (max-width: 760px) {
+  .body {
+    flex-direction: column;
+  }
+  .rail {
+    width: 100%;
+    max-height: 28vh;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 6px;
+  }
+  .rail-head {
+    padding-bottom: 6px;
+  }
+  .meta {
+    margin-left: 0;
+    width: 100%;
+    justify-content: space-between;
+  }
+  .main {
+    padding: 12px 12px calc(40px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
