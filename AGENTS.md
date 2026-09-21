@@ -81,6 +81,18 @@ Push to both remotes. Pushing only to GitHub is safe (the mirror just lags);
 pushing only to GitLab means the public repo is stale, which is the failure that
 matters.
 
+### Credentials
+
+The GitLab API token is the one in **`~/secrets/gitlab.env`** — a `dazeb`
+personal access token with `api` scope. Source that file; do not mint a new
+token for a one-off task. (A service-account token also exists on this machine
+and reads as a valid credential while being unable to see any group or project,
+which is a confusing way to spend an hour — if API calls return empty lists or
+403 on admin endpoints, you are holding that one instead.)
+
+Git access needs no token: SSH keys are already authorised on the GitLab host,
+so `git push gitlab` just works.
+
 ## Commands
 
 ```bash
